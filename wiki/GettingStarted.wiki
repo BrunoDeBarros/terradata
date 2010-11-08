@@ -10,9 +10,9 @@ Terra Data combines all the tasks we often repeatedly perform that are related t
 Getting Terra Data ready to use couldn't be any easier. 
  * [http://code.google.com/p/terradata/downloads/list Download Terra Data]
  * Unzip and upload the lib folder in your project's directory or in your server root.
- * Make lib/Terra_AppData writable (CHMOD the folder to 0777 if you're using a Unix/Linux server)
+ * Make `lib/Terra_AppData` writable (CHMOD the folder to 0777 if you're using a Unix/Linux server)
  * To use Terra Data on your project(s), add `require_once 'lib/Terra/Autoload.php';` to your code.
- * That's it! You can now use Tera Data on your project(s).
+ * That's it! You can now use Terra Data on your project(s).
 
 There is no need to include any Terra Data files on your code, since Terra Data automatically registers an autoloader to take care of that for you.
 
