@@ -17,11 +17,59 @@ class Terra_Data_Table implements ArrayAccess {
 
     protected $Container = array(
         'Name' => '',
+        'Singular' => '',
+        'Urls' => array(
+            'Manage' => '',
+            'View' => '',
+            'Edit' => '',
+            'Restore' => '',
+            'Delete' => '',
+            'Create' => ''
+        ),
+        'Plural' => '',
         'Fields' => array()
     );
 
-    function __construct($Table) {
+    function __construct($Table, $Singular = 'record', $Plural = 'records') {
         $this->Container['Name'] = $Table;
+        $this->Container['Singular'] = $Singular;
+        $this->Container['Plural'] = $Plural;
+    }
+
+    function setManageUrl($Url) {
+        return $this->setUrl($Url, 'Manage', array('PAGE', 'ROWS_PER_PAGE'));
+    }
+    
+    function setViewUrl($Url) {
+        return $this->setUrl($Url, 'View', array('ID'));
+    }
+    
+    function setDeleteUrl($Url) {
+        return $this->setUrl($Url, 'Delete', array('ID'));
+    }
+    
+    function setRestoreUrl($Url) {
+        return $this->setUrl($Url, 'Restore', array('ID'));
+    }
+    
+    function setEditUrl($Url) {
+        return $this->setUrl($Url, 'Edit', array('ID'));
+    }
+    
+    function setCreateUrl($Url) {
+        return $this->setUrl($Url, 'Create');
+    }
+
+    function setUrl($Url, $UrlType, $RequiredTags = array()) {
+        foreach ($RequiredTags as $RequiredTag) {
+            if (stristr($Url, "{$RequiredTag}") === false) {
+                throw new Terra_DataException("Tried to set a $UrlType URL that was missing {$RequiredTag}.");
+                return false;
+            }
+        }
+
+        $this->Container['Urls'][$UrlType] = $Url;
+        return true;
     }
 
     function addField($Identifier, $Name = null, $HumanName = null, $DisableInsertAndUpdate = false, $PrimaryKey = false) {
