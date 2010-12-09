@@ -197,19 +197,61 @@ class Terra_Data {
         $this->MySQL_Connection = $MySQL_Connection;
     }
     
-    function ManageController($page = 1, $rows = 10) {
-        $rows = $this->get(array(
-            'Page' => $page,
-            'Rows' => $rows
-        ));
-        
+    public function buildUrl($action, $tags = array()) {
+        $url = $this->Table_Data['Urls'][$action];
+        foreach ($tags as $tag => $replacement) {
+            $url = str_ireplace("{{$tag}}", $replacement, $url);
+        }
+        return $url;
+    }
+    
+    function ManageController($page = 1, $rows_per_page = 10) {
         $fields = array();
+        $fieldsToGet = array();
+        $record = $this->Table_Data['Singular'];
+        $records = $this->Table_Data['Plural'];
+        $total_pages = $this->getPageCount($rows_per_page);
+        
+        $primary_key = false;
         
         foreach ($this->Fields as $field) {
             if ($field['Manage']) {
-                $fields[] = $field;
+                $fields[$field['Identifier']] = $field;
+                $fieldsToGet[] = $field['Identifier'];
+                if ($field['PrimaryKey']) {
+                    $primary_key = $field['Identifier'];
+                }
             }
         }
+        
+        if (!$primary_key) {
+            # Get the primary key for URL building purposes, even if it isn't meant to be used in the ManageController.
+            $fieldsToGet[] = $this->PrimaryKey;
+        }
+        
+        $buffer = $this->get(array(
+            'Page' => $page,
+            'Rows' => $rows_per_page,
+            'Fields' => $fieldsToGet
+        ));
+        
+        $rows = array();
+        foreach ($buffer as $row) {
+            
+            $id = $row[$this->PrimaryKey];
+            if (!$primary_key) {
+                # Unset the primary key, so that the ManageController template doesn't see it.
+                unset($row[$this->PrimaryKey]);
+            }
+            
+            $rows[] = array(
+                'Fields' => $row,
+                'Edit' => $this->buildUrl('Edit', array('ID' => $id)),
+                'Delete' => $this->buildUrl('Delete', array('ID' => $id))
+            );
+        }
+        
+        $create = $this->buildUrl('Create');
         
         include TERRA_APPDATA_PATH.'data/html_templates/'.$this->Table_Data['HtmlTemplate'].'/manage.php';
     }
@@ -646,6 +688,10 @@ class Terra_Data {
 
     public function get($args = array()) {
         return $this->getWhere(array(), $args);
+    }
+    
+    public function getPageCount($rows_per_page = 30, $WhereClause = array()) {
+        return ceil($this->count($WhereClause) / $rows_per_page);
     }
 
     public function getWhere($WhereClause, $args = array()) {
@@ -1098,45 +1144,6 @@ class Terra_Data {
 
     public static function getTimeSpentQuerying() {
         return self::$TimeSpentQuerying;
-    }
-
-    /**
-     * Generate a table configuration array from a database table.
-     * 
-     * Grabs all the fields in a database table and transforms them into a table configuration array.
-     * This is to simplify the process of getting started with Terra Data.
-     * 
-     * @param string $table
-     * @param resource $connection
-     * @return Terra_Data_Table
-     */
-    public static function discoverTable($table, $connection = null) {
-        if (!is_resource($connection)) {
-            $connection = Terra_Data_Connection::getConnection();
-            if (!is_resource($connection)) {
-                throw new Terra_DataException("No working database connection was found.");
-            }
-        }
-
-        $result = mysql_query("SHOW COLUMNS FROM $table", $connection);
-
-        $return = new Terra_Data_Table($table);
-
-        $rows = array();
-        while ($row = mysql_fetch_assoc($result)) {
-            $Identifier = $row['Field'];
-            $Name = $row['Field'];
-            $HumanName = ucwords(strtolower(str_ireplace('_', ' ', $row['Field'])));
-            $PrimaryKey = ($row['Key'] == 'PRI') ? true : false;
-            $return->addField($Identifier, $Name, $HumanName, false, $PrimaryKey);
-
-            $type = explode('(', $row['Type']);
-            if (count($type) > 1) {
-                # There were brackets. $type[0] is the type, varchar or int. (int) $type[1] is the MaxChars.
-                $return->addValidationRule($Identifier, 'MaxChars', $type[1]);
-            }
-        }
-        return $return;
     }
 
 }
