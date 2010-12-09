@@ -17,6 +17,7 @@ class Terra_Data {
 
     protected $MySQL_Connection;
     protected $Table;
+    protected $Table_Data;
     /**
      * The name of the primary key field.
      * @var string
@@ -66,7 +67,8 @@ class Terra_Data {
         } else {
             throw new Terra_DataException("The \$Table_Data of a new Terra Data must be either an array or an instance of Terra_Data_Table.");
         }
-
+        
+        $this->Table_Data = $Table_Data;
         $this->MySQL_Connection = $MySQL_Connection;
         $this->Table = $Table;
 
@@ -193,6 +195,23 @@ class Terra_Data {
 
     public function setMySQLConnection($MySQL_Connection) {
         $this->MySQL_Connection = $MySQL_Connection;
+    }
+    
+    function ManageController($page = 1, $rows = 10) {
+        $rows = $this->get(array(
+            'Page' => $page,
+            'Rows' => $rows
+        ));
+        
+        $fields = array();
+        
+        foreach ($this->Fields as $field) {
+            if ($field['Manage']) {
+                $fields[] = $field;
+            }
+        }
+        
+        include TERRA_APPDATA_PATH.'data/html_templates/'.$this->Table_Data['HtmlTemplate'].'/manage.php';
     }
 
     /**
