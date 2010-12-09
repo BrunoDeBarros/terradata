@@ -49,18 +49,22 @@ class Terra_Data {
     );
     protected $ValidationErrors = array();
 
-    function __construct($MySQL_Connection, $Table_Data, $Fields = array()) {
+    function __construct($Table_Data, $MySQL_Connection = null) {
 
-        if (is_string($Table_Data)) {
-            $Table = $Table_Data;
-            unset($Table_Data);
-        } elseif (is_array($Table_Data) or $Table_Data instanceof Terra_Data_Table) {
+        if (!is_resource($MySQL_Connection)) {
+            $MySQL_Connection = Terra_Data_Connection::getConnection();
+            if (!is_resource($MySQL_Connection)) {
+                throw new Terra_DataException("No working database connection was found.");
+            }
+        }
+        
+        if (is_array($Table_Data) or $Table_Data instanceof Terra_Data_Table) {
             $Table = $Table_Data['Name'];
             if (empty($Fields)) {
                 $Fields = $Table_Data['Fields'];
             }
         } else {
-            throw new Terra_DataException("The second parameter of a new Terra Data can only be a string or an array.");
+            throw new Terra_DataException("The \$Table_Data of a new Terra Data must be either an array or an instance of Terra_Data_Table.");
         }
 
         $this->MySQL_Connection = $MySQL_Connection;
@@ -1077,6 +1081,16 @@ class Terra_Data {
         return self::$TimeSpentQuerying;
     }
 
+    /**
+     * Generate a table configuration array from a database table.
+     * 
+     * Grabs all the fields in a database table and transforms them into a table configuration array.
+     * This is to simplify the process of getting started with Terra Data.
+     * 
+     * @param string $table
+     * @param resource $connection
+     * @return Terra_Data_Table
+     */
     public static function discoverTable($table, $connection = null) {
         if (!is_resource($connection)) {
             $connection = Terra_Data_Connection::getConnection();
