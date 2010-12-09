@@ -14,10 +14,18 @@
  * file that was distributed with this source code.
  */
 class Terra_Data_Table implements ArrayAccess {
+    
+    const MANAGE = 'Manage';
+    const VIEW = 'View';
+    const EDIT = 'Edit';
+    const RESTORE = 'Restore';
+    const DELETE = 'Delete';
+    const CREATE = 'Create';
 
     protected $Container = array(
         'Name' => '',
         'Singular' => '',
+        'HtmlTemplate' => 'default',
         'Urls' => array(
             'Manage' => '',
             'View' => '',
@@ -30,10 +38,8 @@ class Terra_Data_Table implements ArrayAccess {
         'Fields' => array()
     );
 
-    function __construct($Table, $Singular = 'record', $Plural = 'records') {
+    function __construct($Table) {
         $this->Container['Name'] = $Table;
-        $this->Container['Singular'] = $Singular;
-        $this->Container['Plural'] = $Plural;
     }
     
     function setSingular($Singular) {
@@ -42,6 +48,10 @@ class Terra_Data_Table implements ArrayAccess {
     
     function setPlural($Plural) {
         $this->Container['Plural'] = $Plural;
+    }
+    
+    function setHtmlTemplate($HtmlTemplate) {
+        $this->Container['HtmlTemplate'] = $HtmlTemplate;
     }
 
     function setManageUrl($Url) {
@@ -91,9 +101,19 @@ class Terra_Data_Table implements ArrayAccess {
         $this->Container['Fields'][$Identifier] = array(
             'Identifier' => $Identifier,
             'Name' => $Name,
+            'Manage' => false,
+            'Restore' => false,
+            'View' => false,
+            'Delete' => false,
+            'Create' => false,
+            'Edit' => false,
             'HumanName' => $HumanName,
             'ValidationRules' => array()
         );
+    }
+    
+    function allowField($FieldIdentifier, $Action) {
+        $this->Container['Fields'][$FieldIdentifier][$Action] = true;
     }
 
     function addRelationship($FieldIdentifier, $CanHave, $ExternalTable, $ExternalField, $RelationshipTable, $RelationshipTable_RecordIdField, $RelationshipTable_ExternalRecordIdField, $Alias = null, $ValueField = null) {
@@ -124,11 +144,11 @@ class Terra_Data_Table implements ArrayAccess {
         $this->Container['Fields'][$FieldIdentifier]['ValidationRules'][$ValidationRule] = $Argument;
     }
 
-    function offsetExists($offset) {
+    public function offsetExists($offset) {
         return isset($this->Container[$offset]);
     }
 
-    function offsetUnset($offset) {
+    public function offsetUnset($offset) {
         unset($this->Container[$offset]);
     }
 
