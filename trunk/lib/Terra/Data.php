@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * Terra Data
+ *
+ * Provides a database-independent data handler.
+ *
+ * @author Bruno De Barros <bruno@terraduo.com>
+ * @version 2
+ * @package Terra
+ * @subpackage Data
+ * @copyright Copyright (c) 2008-2011 Bruno De Barros.
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 class Terra_Data {
 
     protected $MySQL_Connection;
@@ -36,7 +49,20 @@ class Terra_Data {
     );
     protected $ValidationErrors = array();
 
-    function __construct($MySQL_Connection, $Table, $Fields) {
+    function __construct($MySQL_Connection, $Table_Data, $Fields = array()) {
+
+        if (is_string($Table_Data)) {
+            $Table = $Table_Data;
+            unset($Table_Data);
+        } elseif (is_array($Table_Data) or $Table_Data instanceof Terra_Data_Table) {
+            $Table = $Table_Data['Name'];
+            if (empty($Fields)) {
+                $Fields = $Table_Data['Fields'];
+            }
+        } else {
+            throw new Terra_DataException("The second parameter of a new Terra Data can only be a string or an array.");
+        }
+
         $this->MySQL_Connection = $MySQL_Connection;
         $this->Table = $Table;
 
@@ -1049,6 +1075,35 @@ class Terra_Data {
 
     public static function getTimeSpentQuerying() {
         return self::$TimeSpentQuerying;
+    }
+
+    public static function discoverTable($table, $connection = null) {
+        if (!is_resource($connection)) {
+            $connection = Terra_Data_Connection::getConnection();
+            if (!is_resource($connection)) {
+                throw new Terra_DataException("No working database connection was found.");
+            }
+        }
+
+        $result = mysql_query("SHOW COLUMNS FROM $table", $connection);
+
+        $return = new Terra_Data_Table($table);
+
+        $rows = array();
+        while ($row = mysql_fetch_assoc($result)) {
+            $Identifier = $row['Field'];
+            $Name = $row['Field'];
+            $HumanName = ucwords(strtolower(str_ireplace('_', ' ', $row['Field'])));
+            $PrimaryKey = ($row['Key'] == 'PRI') ? true : false;
+            $return->addField($Identifier, $Name, $HumanName, false, $PrimaryKey);
+
+            $type = explode('(', $row['Type']);
+            if (count($type) > 1) {
+                # There were brackets. $type[0] is the type, varchar or int. (int) $type[1] is the MaxChars.
+                $return->addValidationRule($Identifier, 'MaxChars', $type[1]);
+            }
+        }
+        return $return;
     }
 
 }
