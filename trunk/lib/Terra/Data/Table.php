@@ -35,6 +35,14 @@ class Terra_Data_Table implements ArrayAccess {
         $this->Container['Singular'] = $Singular;
         $this->Container['Plural'] = $Plural;
     }
+    
+    function setSingular($Singular) {
+        $this->Container['Singular'] = $Singular;
+    }
+    
+    function setPlural($Plural) {
+        $this->Container['Plural'] = $Plural;
+    }
 
     function setManageUrl($Url) {
         return $this->setUrl($Url, 'Manage', array('PAGE', 'ROWS_PER_PAGE'));
