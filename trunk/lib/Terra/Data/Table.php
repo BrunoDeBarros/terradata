@@ -100,6 +100,8 @@ class Terra_Data_Table implements ArrayAccess {
 
         $this->Container['Fields'][$Identifier] = array(
             'Identifier' => $Identifier,
+            'Disabled' => $DisableInsertAndUpdate,
+            'PrimaryKey' => $PrimaryKey,
             'Name' => $Name,
             'Manage' => false,
             'Restore' => false,
