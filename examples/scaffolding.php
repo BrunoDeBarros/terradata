@@ -15,15 +15,16 @@ mysql_select_db('terra_data_test', $connection);
 # Keep the connection in a global container so it can be accessed anywhere for creating new Terra_Data instances.
 Terra_Data_Connection::setConnection($connection);
 
-include('../tests/Terra/Sample_Terra_Data_Configs.php');
+include('../tests/Sample_Terra_Data_Configs.php');
 
 $db = new Terra_Data($connection, 'users', $Fields);
+$baseURL = 'http://localhost/terradata/examples/scaffolding.php';
 $urls = array(
-    'Create' => 'http://localhost/Terra%20Duo%20Projects/Terra%20Data/examples/scaffolding.php?action=create',
-    'Edit' => 'http://localhost/Terra%20Duo%20Projects/Terra%20Data/examples/scaffolding.php?action=edit&id={ID}',
-    'Restore' => 'http://localhost/Terra%20Duo%20Projects/Terra%20Data/examples/scaffolding.php?action=restore&id={ID}',
-    'Delete' => 'http://localhost/Terra%20Duo%20Projects/Terra%20Data/examples/scaffolding.php?action=delete&id={ID}',
-    'Manage' => 'http://localhost/Terra%20Duo%20Projects/Terra%20Data/examples/scaffolding.php?action=manage&page={PAGE}&rows={ROWS_PER_PAGE}',
+    'Create' => $baseURL.'?action=create',
+    'Edit' => $baseURL.'?action=edit&id={ID}',
+    'Restore' => $baseURL.'?action=restore&id={ID}',
+    'Delete' => $baseURL.'?action=delete&id={ID}',
+    'Manage' => $baseURL.'?action=manage&page={PAGE}&rows={ROWS_PER_PAGE}',
 );
 $scaffolding = new Terra_Data_Scaffolding($db, $urls);
 
