@@ -1,5 +1,5 @@
 <table id="manage-<?php echo strtolower($records); ?>" class="manage terra-data">
-    <caption><?php echo ucwords($records); ?></caption>
+    <caption><?php echo ucwords($record); ?> Management</caption>
     <thead>
         <tr>
             <?php foreach ($fields as $field) { ?>
