@@ -46,6 +46,10 @@ class Terra_Data {
         'Matches' => "The <span class=\"field\">%s</span> you have entered does not match the <span class=\"field\">%s</span> field.",
         'Regex' => "You have entered an invalid <span class=\"field\">%s</span>.",
         'Alphanumeric' => "The <span class=\"field\">%s</span> you have entered can only contain letters and digits.",
+        'Numeric' => "The <span class=\"field\">%s</span> you have entered must be a number.",
+        'Integer' => "The <span class=\"field\">%s</span> you have entered can only contain digits.",
+        'Boolean' => "The <span class=\"field\">%s</span> you have entered is invalid.",
+        'Text' => "The <span class=\"field\">%s</span> you have entered must be a piece of text.",
         'Email' => "The <span class=\"field\">%s</span> must be a valid e-mail address."
     );
     protected $ValidationErrors = array();
@@ -58,7 +62,7 @@ class Terra_Data {
                 throw new Terra_DataException("No working database connection was found.");
             }
         }
-        
+
         if (is_array($Table_Data) or $Table_Data instanceof Terra_Data_Table) {
             $Table = $Table_Data['Name'];
             if (empty($Fields)) {
@@ -67,7 +71,7 @@ class Terra_Data {
         } else {
             throw new Terra_DataException("The \$Table_Data of a new Terra Data must be either an array or an instance of Terra_Data_Table.");
         }
-        
+
         $this->Table_Data = $Table_Data;
         $this->MySQL_Connection = $MySQL_Connection;
         $this->Table = $Table;
@@ -196,7 +200,7 @@ class Terra_Data {
     public function setMySQLConnection($MySQL_Connection) {
         $this->MySQL_Connection = $MySQL_Connection;
     }
-    
+
     public function buildUrl($action, $tags = array()) {
         $url = $this->Table_Data['Urls'][$action];
         foreach ($tags as $tag => $replacement) {
@@ -204,16 +208,33 @@ class Terra_Data {
         }
         return $url;
     }
-    
+
+    function CreateController() {
+        $fields = array();
+        $record = $this->Table_Data['Singular'];
+        $records = $this->Table_Data['Plural'];
+        $form_url = $this->buildUrl('Create');
+        $row = array();
+
+        foreach ($this->Fields as $field) {
+            if ($field['Create']) {
+                $fields[$field['Identifier']] = $field;
+                $row[$field['Identifier']] = $field['Default'];
+            }
+        }
+
+        include TERRA_APPDATA_PATH . 'data/html_templates/' . $this->Table_Data['HtmlTemplate'] . '/form.php';
+    }
+
     function ManageController($page = 1, $rows_per_page = 10) {
         $fields = array();
         $fieldsToGet = array();
         $record = $this->Table_Data['Singular'];
         $records = $this->Table_Data['Plural'];
         $total_pages = $this->getPageCount($rows_per_page);
-        
+
         $primary_key = false;
-        
+
         foreach ($this->Fields as $field) {
             if ($field['Manage']) {
                 $fields[$field['Identifier']] = $field;
@@ -223,37 +244,37 @@ class Terra_Data {
                 }
             }
         }
-        
+
         if (!$primary_key) {
             # Get the primary key for URL building purposes, even if it isn't meant to be used in the ManageController.
             $fieldsToGet[] = $this->PrimaryKey;
         }
-        
+
         $buffer = $this->get(array(
-            'Page' => $page,
-            'Rows' => $rows_per_page,
-            'Fields' => $fieldsToGet
-        ));
-        
+                    'Page' => $page,
+                    'Rows' => $rows_per_page,
+                    'Fields' => $fieldsToGet
+                ));
+
         $rows = array();
         foreach ($buffer as $row) {
-            
+
             $id = $row[$this->PrimaryKey];
             if (!$primary_key) {
                 # Unset the primary key, so that the ManageController template doesn't see it.
                 unset($row[$this->PrimaryKey]);
             }
-            
+
             $rows[] = array(
                 'Fields' => $row,
                 'Edit' => $this->buildUrl('Edit', array('ID' => $id)),
                 'Delete' => $this->buildUrl('Delete', array('ID' => $id))
             );
         }
-        
+
         $create = $this->buildUrl('Create');
-        
-        include TERRA_APPDATA_PATH.'data/html_templates/'.$this->Table_Data['HtmlTemplate'].'/manage.php';
+
+        include TERRA_APPDATA_PATH . 'data/html_templates/' . $this->Table_Data['HtmlTemplate'] . '/manage.php';
     }
 
     /**
@@ -689,7 +710,7 @@ class Terra_Data {
     public function get($args = array()) {
         return $this->getWhere(array(), $args);
     }
-    
+
     public function getPageCount($rows_per_page = 30, $WhereClause = array()) {
         return ceil($this->count($WhereClause) / $rows_per_page);
     }
@@ -912,6 +933,27 @@ class Terra_Data {
                 case 'MaxChars':
                     if (strlen($value) > $arg) {
                         $this->ValidationErrors[$Name] = sprintf(self::$ErrorMessages['MaxChars'], $this->humanizeField($Name), $arg);
+                        $valid = false;
+                    }
+                    break;
+                case 'Text':
+                    # I really don't know when it would not be considered text, but this is here for Scaffolding purposes.
+                    break;
+                case 'Numeric':
+                    if (!is_numeric($value)) {
+                        $this->ValidationErrors[$Name] = sprintf(self::$ErrorMessages['Numeric'], $this->humanizeField($Name), $arg);
+                        $valid = false;
+                    }
+                    break;
+                case 'Boolean':
+                    if ($value == "1" or $value == "0" or $value === false or $value === true or $value === 1 or $value === 0) {
+                        $this->ValidationErrors[$Name] = sprintf(self::$ErrorMessages['Boolean'], $this->humanizeField($Name), $arg);
+                        $valid = false;
+                    }
+                    break;
+                case 'Integer':
+                    if (!preg_match("/^[0-9]+$/", $value)) {
+                        $this->ValidationErrors[$Name] = sprintf(self::$ErrorMessages['Integer'], $this->humanizeField($Name));
                         $valid = false;
                     }
                     break;
