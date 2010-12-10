@@ -3,7 +3,7 @@
 /**
  * Terra Data Table
  * 
- * Facilitates the creation of configuration arrays for Terra Data.
+ * Facilitates the creation of table configuration arrays for Terra Data.
  *
  * @author Bruno De Barros <bruno@terraduo.com>
  * @version 2
@@ -174,7 +174,7 @@ class Terra_Data_Table implements ArrayAccess {
             $return .= "\${$var}->setHtmlTemplate('{$this['HtmlTemplate']}');\r\n";
         }
         foreach ($this['Fields'] as $field) {
-            $return .= "\${$var}->addField('{$field['Identifier']}', '{$field['Name']}', '{$field['HumanName']}', ".(($field['Disabled']) ? 'true' : 'false').", '{$field['PrimaryKey']}');\r\n";
+            $return .= "\${$var}->addField('{$field['Identifier']}', '{$field['Name']}', '{$field['HumanName']}', " . (($field['Disabled']) ? 'true' : 'false') . ", '{$field['PrimaryKey']}');\r\n";
             foreach ($field['ValidationRules'] as $rule => $arg) {
                 if ($rule == 'ExistsIn') {
                     $return .= "\${$var}->existsIn('{$field['Identifier']}', '{$arg['Table']}', '{$arg['Field']}', '{$arg['Alias']}', '{$arg['ValueField']}');\r\n";
@@ -183,6 +183,9 @@ class Terra_Data_Table implements ArrayAccess {
                         $return .= "\${$var}->addValidationRule('{$field['Identifier']}', '$rule', '$arg');\r\n";
                     } elseif (is_array($arg)) {
                         $return .= "\${$var}->addValidationRule('{$field['Identifier']}', '$rule', " . self::printArrayAsPhpCode($arg, true) . ");\r\n";
+                    } elseif(is_bool($arg)) {
+                        $arg = ($arg) ? 'true' : 'false';
+                        $return .= "\${$var}->addValidationRule('{$field['Identifier']}', '$rule', $arg);\r\n";
                     }
                 }
             }
@@ -200,7 +203,7 @@ class Terra_Data_Table implements ArrayAccess {
                 $return .= "\${$var}->addRelationship('{$field['Identifier']}','{$field['CanHave']}','{$field['Table']}','{$field['Field']}','{$field['Rel_Table']}','{$field['ID']}','{$field['REL_ID']}', $Alias, $ValueField);\r\n";
             }
         }
-        
+
         return $return;
     }
 
@@ -208,7 +211,7 @@ class Terra_Data_Table implements ArrayAccess {
         return (array) $this;
     }
 
-    function addValidationRule($FieldIdentifier, $ValidationRule, $Argument) {
+    function addValidationRule($FieldIdentifier, $ValidationRule, $Argument = true) {
         $this->Container['Fields'][$FieldIdentifier]['ValidationRules'][$ValidationRule] = $Argument;
     }
 
@@ -268,9 +271,23 @@ class Terra_Data_Table implements ArrayAccess {
             $Return->addField($Identifier, $Name, $HumanName, false, $PrimaryKey);
 
             $Type = explode('(', $Row['Type']);
-            if (count($Type) > 1) {
-                # There were brackets. $Type[0] is the type, varchar or int. (int) $Type[1] is the MaxChars.
-                $Return->addValidationRule($Identifier, 'MaxChars', (int) $Type[1]);
+            if (in_array($Type[0], array('int', 'varchar', 'text', 'tinyint'))) {
+                if (count($Type) > 1) {
+                    # There were brackets. $Type[0] is the type, varchar or int. (int) $Type[1] is the MaxChars.
+                    $Return->addValidationRule($Identifier, 'MaxChars', (int) $Type[1]);
+                }
+                
+                if ($Type[0] == 'tinyint' and (int) $Type[1] == 1) {
+                    $Return->addValidationRule($Identifier, 'Boolean');
+                }
+                
+                if ($Type[0] == 'int') {
+                    $Return->addValidationRule($Identifier, 'Integer');
+                }
+                
+                if ($Type[0] == 'varchar' or $Type[0] == 'text') {
+                    $Return->addValidationRule($Identifier, 'Text');
+                }
             }
         }
         return $Return;
