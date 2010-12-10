@@ -18,6 +18,8 @@ class Terra_Data {
     protected $MySQL_Connection;
     protected $Table;
     protected $Table_Data;
+    protected $Page = 1;
+    protected $RowsPerPage = 30; 
     /**
      * The name of the primary key field.
      * @var string
@@ -108,6 +110,20 @@ class Terra_Data {
                 'ValidationRules' => array()
             );
             $this->Fields[$Field['Name']] = array_merge($Original, $Field);
+        }
+    }
+
+    public function __destruct() {
+        if (self::$logAllQueries and self::getQueryCount() > 0) {
+            $fh = @fopen(TERRA_APPDATA_PATH . 'data/logs/query-log-' . $_SERVER['REQUEST_TIME'] . '.txt', 'w');
+            if ($fh) {
+                fwrite($fh, "--------------------\r\n");
+                fwrite($fh, "Executed " . self::getQueryCount() . " queries in " . substr(self::getTimeSpentQuerying(), 0, 7) . " seconds.\r\n");
+                fwrite($fh, "--------------------\r\n");
+                foreach (self::getAllQueriesLogged() as $query) {
+                    fwrite($fh, $query . "\r\n");
+                }
+            }
         }
     }
 
@@ -208,6 +224,14 @@ class Terra_Data {
         }
         return $url;
     }
+    
+    public function setPage($page = 1) {
+        $this->Page = $page;
+    }
+    
+    public function setRowsPerPage($rows_per_page = 30) {
+        $this->RowsPerPage = $rows_per_page;
+    }
 
     function CreateController() {
         $fields = array();
@@ -219,14 +243,36 @@ class Terra_Data {
         foreach ($this->Fields as $field) {
             if ($field['Create']) {
                 $fields[$field['Identifier']] = $field;
+                $fields[$field['Identifier']]['Error'] = '';
                 $row[$field['Identifier']] = $field['Default'];
+            }
+        }
+
+        $errors = array();
+        if (isset($_POST['submit'])) {
+            try {
+                $this->create($_POST['fields']);
+                header('Location: '.$this->buildUrl('Manage', array('PAGE' => $this->Page, 'ROWS_PER_PAGE' => $this->RowsPerPage)));
+            } catch (Terra_Data_ValidationException $e) {
+                foreach ($this->getValidationErrors() as $Identifier => $Error) {
+                    $fields[$Identifier]['Error'] = $Error;
+                }
             }
         }
 
         include TERRA_APPDATA_PATH . 'data/html_templates/' . $this->Table_Data['HtmlTemplate'] . '/form.php';
     }
 
-    function ManageController($page = 1, $rows_per_page = 10) {
+    function ManageController($page = 0, $rows_per_page = 0) {
+        
+        if (!$page) {
+            $page = $this->Page;
+        }
+        
+        if (!$rows_per_page) {
+            $rows_per_page = $this->RowsPerPage;
+        }
+        
         $fields = array();
         $fieldsToGet = array();
         $record = $this->Table_Data['Singular'];
