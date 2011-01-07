@@ -1,0 +1,234 @@
+/* CSS RESET */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    font-weight: normal;
+    font-style: inherit;
+    font-size: 100%;
+    font-family: inherit;
+    vertical-align: baseline;
+}
+body, input {
+    font-family: Georgia, serif;
+    font-size: 16px;
+    line-height: 22px;
+    font-style: normal;
+    font-weight: normal;
+    text-transform: normal;
+    letter-spacing: normal;
+}
+ol, ul {
+    list-style: none;
+}
+/* tables still need 'cellspacing="0"' in the markup */
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+caption, th, td {
+    text-align: left;
+    font-weight: normal;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+    content: "";
+}
+blockquote, q {
+    quotes: "" "";
+}
+
+h1 {
+    font-size: 150%;
+}
+
+.clear {
+    clear: both;
+}
+
+#contents, #footer, .container {
+    width: 960px;
+    margin:auto;
+    text-align: center;
+}
+
+#footer {
+    font-size: 80%;
+    margin-top: 20px;
+    padding-top: 5px;
+}
+
+table {
+    width: 100%;
+}
+
+td.actions, th.actions {
+    width: 120px;
+    text-align: center;
+}
+
+tbody tr:hover .jGrowl {
+    text-shadow: 0px 0px 0px;
+}
+
+a, button, .success, .error {
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+}
+
+a {
+    text-decoration: none;
+    padding: 5px;
+}
+
+.pagination li {
+    display: inline;
+    list-style: none;
+}
+
+.pagination {
+    padding: 0;
+    margin: 5px;
+}
+
+input, select {
+    padding: 5px;
+    margin: 0px;
+    font-size: 20px;
+    font-weight: inherit;
+    font-style: inherit;
+    font-family: inherit;
+}
+
+button {
+    margin-top: 10px;
+    border: 0;
+    outline: 0;
+    font-weight: inherit;
+    font-style: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    vertical-align: baseline;
+    display: block;
+    padding: 10px;
+    border: 0;
+    text-align: center;
+    cursor: pointer;
+}
+
+.error {
+    padding: 5px;
+    margin: 5px;
+}
+
+.success {
+    padding: 10px;
+    margin: 5px;
+}
+
+label {
+    display: block;
+    padding: 10px;
+}
+
+label .description {
+    margin: 2px;
+    padding: 0px;
+}
+
+form .form, .box {
+    text-align: left;
+    margin: 20px;
+    padding: 30px;
+}
+
+#header {
+    padding: 20px 0px;
+    width: 100%;
+}
+
+#header ul {
+    margin: 10px;
+}
+
+#header li {
+    display: inline;
+}
+
+#header a {
+    white-space: nowrap;
+}
+
+#toggle_header {
+    float: right;
+    margin-right: 50px;
+    width: 50px;
+    -webkit-border-bottom-left-radius: 5px;
+    -webkit-border-bottom-right-radius: 5px;
+    -moz-border-radius-bottomleft: 5px;
+    -moz-border-radius-bottomright: 5px;
+    text-align: center;
+    padding: 5px;
+    display: inline;
+    cursor: pointer;
+}
+
+#login {
+    float: right;
+}
+
+.container {
+    text-align: left;
+}
+
+#contents h1 {
+    margin: 10px;
+    font-size: 200%;
+}
+
+#contents h3 {
+    margin: 5px;
+}
+
+strong {
+    font-weight: bold;
+}
+
+.radio {
+    margin: 0px 10px 5px 10px;
+}
+
+.radio label {
+    display: inline;
+    padding: 0px;
+}
+
+.fl {
+    float: left;
+}
+
+.fr {
+    float: right;
+}
+
+.bullet {
+    list-style: circle;
+}
+
+.left {
+    text-align: left;
+}

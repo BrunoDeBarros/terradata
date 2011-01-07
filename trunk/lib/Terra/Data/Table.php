@@ -34,6 +34,7 @@ class Terra_Data_Table implements ArrayAccess {
             'Create' => ''
         ),
         'Plural' => '',
+        'ConfirmDelete' => true,
         'Fields' => array()
     );
 
@@ -42,6 +43,19 @@ class Terra_Data_Table implements ArrayAccess {
         if ($AutoDiscover) {
             self::discoverTable($Table, null, &$this);
         }
+    }
+    
+    /**
+     * Set whether to show a "Confirm Delete" page.
+     * 
+     * If set to true, Terra_Data::DeleteController() will require the user 
+     * to confirm that he wishes to delete the record. Otherwise, calling
+     * DeleteController() will automatically delete the record.
+     * 
+     * @param boolean $confirm
+     */
+    function setConfirmDelete($confirm = true) {
+        $this->Container['ConfirmDelete'] = $confirm;
     }
 
     function setSingular($Singular) {

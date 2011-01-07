@@ -15,11 +15,21 @@
  */
 class Terra_Data {
 
+    /**
+     * Used as a container for storing random data.
+     * @var mixed
+     */
+    protected $buffer;
+    /**
+     * Contains the table configuration array.
+     * @var array|Terra_Data_Table
+     */
+    protected $tableData;
+    
     protected $MySQL_Connection;
     protected $Table;
-    protected $Table_Data;
-    protected $Page = 1;
-    protected $RowsPerPage = 30; 
+    protected $page = 1;
+    protected $rowsPerPage = 30;
     /**
      * The name of the primary key field.
      * @var string
@@ -74,7 +84,7 @@ class Terra_Data {
             throw new Terra_DataException("The \$Table_Data of a new Terra Data must be either an array or an instance of Terra_Data_Table.");
         }
 
-        $this->Table_Data = $Table_Data;
+        $this->tableData = $Table_Data;
         $this->MySQL_Connection = $MySQL_Connection;
         $this->Table = $Table;
 
@@ -218,65 +228,121 @@ class Terra_Data {
     }
 
     public function buildUrl($action, $tags = array()) {
-        $url = $this->Table_Data['Urls'][$action];
+        $url = $this->tableData['Urls'][$action];
         foreach ($tags as $tag => $replacement) {
-            $url = str_ireplace("{{$tag}}", $replacement, $url);
+            if (!empty($replacement)) {
+                $url = str_ireplace("{{$tag}}", $replacement, $url);
+            }
         }
         return $url;
     }
-    
+
     public function setPage($page = 1) {
-        $this->Page = $page;
+        $this->page = $page;
     }
-    
+
     public function setRowsPerPage($rows_per_page = 30) {
-        $this->RowsPerPage = $rows_per_page;
+        $this->rowsPerPage = $rows_per_page;
     }
 
     function CreateController() {
-        $fields = array();
-        $record = $this->Table_Data['Singular'];
-        $records = $this->Table_Data['Plural'];
-        $form_url = $this->buildUrl('Create');
-        $row = array();
+        if (isset($_POST['submit'])) {
+            try {
+                $this->create($_POST['fields']);
+                header('Location: ' . $this->buildUrl('Manage', array('PAGE' => $this->page, 'ROWS_PER_PAGE' => $this->rowsPerPage)));
+                return;
+            } catch (Terra_Data_ValidationException $e) {
+                # Errors are handled by _executeControllerTemplate, so it's all good.
+            }
+        }
+
+        $this->_executeControllerTemplate('form', 'Create');
+    }
+
+    /**
+     * Executes a controller template.
+     *
+     * This function helps simplify the code for all the controllers by providing all templates with a set of default variables.
+     * Additional, controller-specific variables can be passed in $data.
+     *
+     * $file is the name of the controller template file (eg. delete, form, manage, restore)
+     *
+     * $action is the action the controller is carrying out (eg. Create, Edit, Delete, Restore, Manage or View)
+     *
+     * @param string $file
+     * @param string $action
+     * @param array $data
+     */
+    protected function _executeControllerTemplate($file, $action, $data = array()) {
+
+        if (!@file_exists(TERRA_APPDATA_PATH . 'data/html_templates/' . $this->tableData['HtmlTemplate'] . '/'.$this->buffer.'.php')) {
+            throw new Terra_DataException($message, $code);
+        }
+
+        $fields = array(); // An array containing the allowed fields
+        $page = isset($data['page']) ? $data['page'] : $this->page; // The current page.
+        $rowsPerPage = isset($data['rowsPerPage']) ? $data['rowsPerPage'] : $this->rowsPerPage; // The number of rows per page.
+        $record = $this->tableData['Singular']; // The singular spelling of a record.
+        $records = $this->tableData['Plural']; // The plural spelling of a record.
+        $row = array(); // An array containing a default row (or, in the case of an edit, the row's details)
+        $id = isset($data['ID']) ? $data['ID'] : null; // The current record's ID (not applicable in ManageController)
+        $createUrl = $this->buildUrl('Create');
+        $editUrl = $this->buildUrl('Edit', array('ID' => $id));
+        $deleteUrl = $this->buildUrl('Delete', array('ID' => $id));
+        $viewUrl = $this->buildUrl('View', array('ID' => $id));
+        $restoreUrl = $this->buildUrl('Restore', array('ID' => $id));
+        $manageUrl = $this->buildUrl('Manage', array(
+                    'PAGE' => $page,
+                    'ROWS_PER_PAGE' => $rowsPerPage,
+                ));
 
         foreach ($this->Fields as $field) {
-            if ($field['Create']) {
+            if ($field[$action]) {
                 $fields[$field['Identifier']] = $field;
                 $fields[$field['Identifier']]['Error'] = '';
                 $row[$field['Identifier']] = $field['Default'];
             }
         }
 
-        $errors = array();
-        if (isset($_POST['submit'])) {
-            try {
-                $this->create($_POST['fields']);
-                header('Location: '.$this->buildUrl('Manage', array('PAGE' => $this->Page, 'ROWS_PER_PAGE' => $this->RowsPerPage)));
-            } catch (Terra_Data_ValidationException $e) {
-                foreach ($this->getValidationErrors() as $Identifier => $Error) {
-                    $fields[$Identifier]['Error'] = $Error;
-                }
-            }
+        $validationErrors = $this->getValidationErrors();
+
+        // If there are any validation errors, attach them to the form fields.
+        foreach ($validationErrors as $Identifier => $Error) {
+            $fields[$Identifier]['Error'] = $Error;
         }
 
-        include TERRA_APPDATA_PATH . 'data/html_templates/' . $this->Table_Data['HtmlTemplate'] . '/form.php';
+        $this->buffer = $file;
+
+        extract($data);
+
+        include TERRA_APPDATA_PATH . 'data/html_templates/' . $this->tableData['HtmlTemplate'] . '/'.$this->buffer.'.php';
+    }
+
+    function DeleteController($id) {
+        if ($this->tableData['ConfirmDelete'] and !isset($_POST['submit'])) {
+            include TERRA_APPDATA_PATH . 'data/html_templates/' . $this->tableData['HtmlTemplate'] . '/delete.php';
+            return;
+        }
+
+        // If it got this far, then it's either confirmed or no confirmation was necessary.
+
+        $this->delete($id);
     }
 
     function ManageController($page = 0, $rows_per_page = 0) {
-        
+
         if (!$page) {
-            $page = $this->Page;
+            $page = $this->page;
         }
-        
+
         if (!$rows_per_page) {
-            $rows_per_page = $this->RowsPerPage;
+            $rows_per_page = $this->owsPerPage;
         }
-        
+
         $fields = array();
         $fieldsToGet = array();
-        $record = $this->Table_Data['Singular'];
-        $records = $this->Table_Data['Plural'];
+        $record = $this->tableData['Singular'];
+        $records = $this->tableData['Plural'];
         $total_pages = $this->getPageCount($rows_per_page);
 
         $primary_key = false;
@@ -320,7 +386,7 @@ class Terra_Data {
 
         $create = $this->buildUrl('Create');
 
-        include TERRA_APPDATA_PATH . 'data/html_templates/' . $this->Table_Data['HtmlTemplate'] . '/manage.php';
+        include TERRA_APPDATA_PATH . 'data/html_templates/' . $this->tableData['HtmlTemplate'] . '/manage.php';
     }
 
     /**
@@ -1116,6 +1182,7 @@ class Terra_Data {
                     break;
             }
         }
+
         return $valid;
     }
 

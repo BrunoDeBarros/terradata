@@ -22,18 +22,33 @@ $Fields = array(
                 'Scaffolding' => array(
                     'Manage' => true,
                 ),
+
+                'ValidationRules' => array(
+                    'MaxChars' => 255,
+                    'Integer',
+                    'Unique'
+                )
         ),
 
         'CREATED' => array(
                 'Name' => 'CREATED',
+                'ValidationRules' => array(
+                    'Integer'
+                )
         ),
 
         'UPDATED' => array(
-                'Name' => 'UPDATED'
+                'Name' => 'UPDATED',
+            'ValidationRules' => array(
+                    'Integer'
+                )
         ),
 
         'IS_DELETED' => array(
-                'Name' => 'IS_DELETED'
+                'Name' => 'IS_DELETED',
+            'ValidationRules' => array(
+                    'Boolean'
+                )
         ),
 
         'USERNAME' => array(
