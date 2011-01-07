@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <title>Terra Duo Table Manager Documentation</title>
+        <link href="framework.css" rel="stylesheet" type="text/css" />
+        <link href="style.css" rel="stylesheet" type="text/css" />
+    </head>
+    <body>
+        <div id="header">
+            <h1>Terra Duo Table Manager User Guide</h1>
+            <ul>
+                <li><a href="#home" title="User Guide Home">User Guide Home</a></li>
+                <li><a href="#getting_started" title="Getting Started">Getting Started</a></li>
+                <li><a href="#initial_config" title="Initial Configuration">Initial Configuration</a></li>
+                <li><a href="" title="">Getting Records</a></li>
+                <li><a href="" title="">Creating Records</a></li>
+                <li><a href="" title="">Editing Records</a></li>
+                <li><a href="" title="">Deleting Records</a></li>
+                <li><a href="" title="">Validating Data</a></li>
+                <li><a href="" title="">Handling Errors</a></li>
+                <li><a href="" title="">Discovering Tables</a></li>
+                <li><a href="" title="">Extending Table Manager</a></li>
+                <li><a href="" title="">Query Logging and Statistics</a></li>
+                <li><a href="" title="">Configuration Reference</a></li>
+                <li><a href="" title="">Additional Information</a></li>
+            </ul>
+        </div>
+        <div id="content">
+            <div class="section">
+                <h2>User Guide Home</h2>
+                <p>The Terra Duo Table Manager helps you keep input processing and storage simple. It provides you with:</p>
+                <ul class="bullet">
+                    <li>Input Validation</li>
+                    <li>Input Sanitizing</li>
+                    <li>Input Filtering</li>
+                    <li>An SQL Generator and Database Abstraction Layer for CRUD operations.</li>
+                </ul>
+                <p>This is all contained in a single class, and the interface has been kept as simple as possible, so that it's extremely easy for you to get started and to use it.</p>
+            </div>
+
+            <div class="section">
+                <h2>Getting Started</h2>
+                <ol>
+                    <li><a href="http://terraduo.com/projects/table-manager/download">Download the Terra Duo Table Manager</a></li>
+                    <li>Unpack the ZIP file.</li>
+                    <li>Place the TD folder wherever you want it.</li>
+                </ol>
+                <h3 class="green">That's it! Simple enough? Let's start using it, then.</h3>
+            </div>
+
+            <div class="section">
+                <h2>Initial Configuration</h2>
+                <p>The Table Manager requires very little configuration by default. If you want to use it, it's as simple as:</p>
+                <pre>
+
+require_once 'TD/Table_Manager/TD_Table_Manager.php';
+require_once 'TD/Table_Manager/TD_Table_Manager_Exception.php';
+require_once 'TD/Table_Manager/TD_Table_Manager_Interface.php';
+require_once 'TD/Table_Manager/TD_MySQL_Table_Manager.php';
+
+$MyTable = TD_Table_Manager::Factory('MySQL');
+$MyTable->setTableName('MyTable');
+$MyTable->setDatabaseConnection($Connection); # $Connection is a resource, the MySQL Connection.
+                </pre>
+                <p>And that's it! You can use it for CRUD operations without any additional configuration. 
+                    If you want to use validation, table relationships, and any other advanced features, you only need a bit more.
+                    Let's take for example a <em>users</em> table.
+                    Any user will have an ID, a username, a password, a country, an e-mail address and a registration date.
+                    Because the Terra Duo Table Manager was built for performance, I found it better to simply write an array containing all the fields (columns) of a table, their validation rules, filtering or sanitizing callbacks and indeed any other meta data regarding any table field. In the case of our <em>users</em> table, we would have:
+                </p>
+                <pre>
+
+$users = array(
+        'Name' => 'users',
+
+        'Fields' => array(
+                'ID' => array(),
+
+                'USERNAME' => array(
+                        'ValidationRules' => array(
+                            'max_chars' => 100,
+                            'min_chars' => 3,
+                            'alphanumeric'
+                        );
+                ),
+
+                'PASSWORD' => array(
+                        'ValidationRules' => array(
+                            'hash' => 'sha256'
+                        );
+                ),
+
+                'COUNTRY_ID' => array(
+                    'ValidationRules' => array(
+                        'ExistsIn' => array(
+                            'Table' => 'countries',
+                            'Field' => 'ID'
+                            'ValueField' => 'NAME'
+                        )
+                    );
+                ),
+
+                'EMAIL' => array(
+                    'ValidationRules' => array(
+                        'email',
+                        'max_chars' => 100
+                    )
+                ),
+
+                'CREATED' => array()
+        )
+
+);
+                </pre>
+                <p>This would seem confusing at first to some, but let's go through it slowly.</p>
+                <ol>
+                    <li><em>ID</em> - I have set it there just to let the Terra Duo Table Manager know it exists. It would work without it, but I prefer to specify all the fields in a table.</li>
+                <li><em>USERNAME</em> - The username is straightforward. Maximum number of characters is 100, minimum is 3. It is also <abbr title="Can contain only numbers or letters">alphanumeric</abbr>.</li>
+                <li><em>PASSWORD</em> - The password uses the hash function and the sha256 algorithm, so that it is hashed before being stored in the database.</li>
+                <li><em>COUNTRY_ID</em> - This field is not as straightforward at first. Its value <em>exists in</em> the countries table, in the ID column. That means that whenever attempting to create a username, the value provided for COUNTRY_ID must be an existing ID in the countries table. The Terra Duo Table Manager will select the ValueField from the countries table as COUNTRY (COUNTRY_ID, but without the _ID), for the purpose of obtaining more ready-to-use data from the database. That way, if you are getting records from the database, you will get not only COUNTRY_ID, but also the country's NAME (as COUNTRY), in case you need it.</li>
+                <li><em>EMAIL</em> - Again, a straightforward field. It's an email, and the maximum number of allowed characters is 100.</li>
+                <li><em>CREATED</em> - This field has a special characteristic. The Terra Duo Table Manager will recognize it as a creation date field, and will insert in the database as its value the current date/time <em>(in MySQL, it will use NOW())</em>.</li>
+                </ol>
+                <p class="note">The Terra Duo Table Manager has support for many more validation rules, and other configuration settings too. You can write your own validation rules, input modifiers, sanitizers, filters, etc. This is described in detail in the <a href="#validating_data">Validating Data</a> section, and in the <a href="#configuration_reference">Configuration Reference</a> section.</p>
+                <p class="note">You can use TD_Table_Manager::DiscoverTable($TableName) to get the Terra Duo Table Manager to write this array for you. This is described in detail in the <a href="#discovering_tables">Discovering Tables</a> section.</p>
+            </div>
+
+            <div class="section">
+                <h2>Getting Records</h2>
+                <pre>
+$TableManager->get();
+                </pre>
+            </div>
+
+            <div class="section">
+                <h2></h2>
+
+            </div>
+        </div>
+        <div class="clear"></div>
+        <div id="footer">
+            <p>Terra Duo Table Manager Copyright &copy; 2008-2010 Terra Duo &middot; Licensed under the MIT License (read copy from other people)</p>
+        </div>
+    </body>
+</html>

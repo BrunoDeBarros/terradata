@@ -1,0 +1,18 @@
+-> The layout example.
+-> The docs.
+-> The BlackWhiteAndRed Scaffolding template.
+-> Terra_Events (shouldn't be static)
+-> Terra_Exception (Terra_DataException should descend from it)
+-> Terra_Layout
+-> Terra_Scaffolding (Shouldn't exist anymore, make sure Terra_Data has all its features, and delete.)
+-> Terra_ScaffoldingException (Shouldn't exist anymore.)
+-> Terra_SMS (Needs to be compatible with the new Terra_Data)
+-> Terra_Table (Shouldn't exist anymore, make sure Terra_Data has all its features, and delete.)
+-> TD_Transaction (Should be Terra_Payments, and obviously still needs a lot of work.)
+-> The admin example.
+-> TD_Admin
+-> TD_Table_Scaffolding (Shouldn't exist anymore, make sure Terra_Data has all its features, and delete.)
+-> Table_Manager (Shouldn't exist anymore, make sure Terra_Data has all its features, and delete.)
+-> Terra_EventsTest (just make a new one and make sure all tests are well built)
+-> Terra_TableTest (make sure the Terra_DataTest has all the tests in this suite)
+-> TD_TransactionTest (should be Terra_PaymentsTest, and still needs a lot of work.)

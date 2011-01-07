@@ -34,8 +34,10 @@ class Terra_DataTest extends PHPUnit_Framework_TestCase {
         require('Sample_Terra_Data_Configs.php');
 
         $this->Users = new Terra_Data($con, 'users', $Fields);
-        $this->Countries = new Terra_Data($con, 'countries', array('NAME'));
-        $this->Articles = new Terra_Data($con, 'articles', array('NAME', 'CONTENTS'));
+        $this->Countries = new Terra_Data($con, 'countries', array('NAME' => array('ValidationRules' => array('MaxChars' => 255))));
+        $this->Articles = new Terra_Data($con, 'articles', array(
+            'NAME' => array('ValidationRules' => array('MaxChars' => 255)),
+            'CONTENTS' => array('ValidationRules' => array('MinChars' => 5)))); # @todo program more sophisticated text content validation (safe HTML, etc.)
     }
 
     function testCreatingTerraDataWithSimpleArrayOfFields() {
@@ -226,15 +228,15 @@ class Terra_DataTest extends PHPUnit_Framework_TestCase {
 
     function testHasManyRelationshipField() {
         $articles = array(
-            $this->Articles->create(array('NAME' => 'test 1', 'CONTENS' => 'blah blah')),
-            $this->Articles->create(array('NAME' => 'test 2', 'CONTENS' => 'blah blah')),
-            $this->Articles->create(array('NAME' => 'test 3', 'CONTENS' => 'blah blah')),
+            $this->Articles->create(array('NAME' => 'test 1', 'CONTENTS' => 'blah blah')),
+            $this->Articles->create(array('NAME' => 'test 2', 'CONTENTS' => 'blah blah')),
+            $this->Articles->create(array('NAME' => 'test 3', 'CONTENTS' => 'blah blah')),
         );
         $ID = $this->Users->create(array('USERNAME' => 'bruno', 'PASSWORD' => 'pass', 'EMAIL' => 'bruno@terraduo.com', 'ARTICLES' => $articles));
         $this->assertTrue((bool) $ID);
         $this->assertEquals($articles, $this->Users->getArticlesById($ID));
 
-        $articles[] = $this->Articles->create(array('NAME' => 'test 4', 'CONTENS' => 'blah blah'));
+        $articles[] = $this->Articles->create(array('NAME' => 'test 4', 'CONTENTS' => 'blah blah'));
         $this->Users->edit($ID, array('ARTICLES' => $articles));
 
         $this->assertEquals($articles, $this->Users->getArticlesById($ID));
@@ -264,9 +266,9 @@ class Terra_DataTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals(0, $this->Countries->count(array('ID' => $countryID))); # Assert that the country was deleted due to the user being deleted.
 
         $articles = array(
-            $this->Articles->create(array('NAME' => 'test 1', 'CONTENS' => 'blah blah')),
-            $this->Articles->create(array('NAME' => 'test 2', 'CONTENS' => 'blah blah')),
-            $this->Articles->create(array('NAME' => 'test 3', 'CONTENS' => 'blah blah')),
+            $this->Articles->create(array('NAME' => 'test 1', 'CONTENTS' => 'blah blah')),
+            $this->Articles->create(array('NAME' => 'test 2', 'CONTENTS' => 'blah blah')),
+            $this->Articles->create(array('NAME' => 'test 3', 'CONTENTS' => 'blah blah')),
         );
         $ID = $this->Users->create(array('USERNAME' => 'bruno', 'PASSWORD' => 'pass', 'EMAIL' => 'bruno@terraduo.com', 'ARTICLES' => $articles));
 
@@ -506,7 +508,53 @@ if ($Array["Terra_Data"]->count(array()) >= $Array["Arg"]) {
         $users->create(array('USERNAME' => 'Joe'));
     }
 
+    function testAddAndRemoveRelatedRecords() {
+        $articles = array(
+            $this->Articles->create(array('NAME' => 'test 1', 'CONTENTS' => 'blah blah')),
+            $this->Articles->create(array('NAME' => 'test 2', 'CONTENTS' => 'blah blah')),
+            $this->Articles->create(array('NAME' => 'test 3', 'CONTENTS' => 'blah blah')),
+        );
+        $ID = $this->Users->create(array('USERNAME' => 'bruno', 'PASSWORD' => 'pass', 'EMAIL' => 'bruno@terraduo.com', 'ARTICLES' => $articles));
+        $this->assertTrue((bool) $ID);
+        $this->assertEquals($articles, $this->Users->getArticlesById($ID));
 
+        $article = $this->Articles->create(array('NAME' => 'test 4', 'CONTENTS' => 'blah blah'));
+        $original_articles = $articles;
+        $articles[] = $article;
+        $original_articles2 = $articles;
+        $this->Users->addArticlesById($ID, $article); # Works with an ID.
+        $this->assertEquals($articles, $this->Users->getArticlesById($ID));
+        $article1 = $this->Articles->create(array('NAME' => 'test 5', 'CONTENTS' => 'blah blah'));
+        $article2 = $this->Articles->create(array('NAME' => 'test 6', 'CONTENTS' => 'blah blah'));
+        $articles[] = $article1;
+        $articles[] = $article2;
+        $this->Users->addArticlesById($ID, array($article1, $article2)); # Works with an array of IDs.
+        $this->assertEquals($articles, $this->Users->getArticlesById($ID));
+
+        $this->Users->removeArticlesById($ID, array($article1, $article2)); # Works with an array of IDs.
+        $this->assertEquals($original_articles2, $this->Users->getArticlesById($ID));
+        $this->Users->removeArticlesById($ID, $article); # Works with an ID.
+        $this->assertEquals($original_articles, $this->Users->getArticlesById($ID));
+    }
+
+    function testValidationRulesDoNotAlwaysRequireAnArgument() {
+        $con = mysql_connect('localhost', 'root', '');
+        mysql_select_db('terra_data_test', $con);
+        $users = new Terra_Data($con, 'users', array('ID' => array('PrimaryKey' => true), 'USERNAME' => array('ValidationRules' => array('Unique')))); # Notice I didn't use Unique = true. That's the bug that we're fixing.
+        $users->create(array('USERNAME' => 'bruno'));
+        $this->setExpectedException('Terra_Data_ValidationException');
+        $users->create(array('USERNAME' => 'bruno'));
+    }
+
+    function testUsingAnUnknownFieldCausesError() {
+        $this->setExpectedException('Terra_DataException');
+        $this->Users->create(array(
+            'USERNAME' => 'bruno',
+            'PASSWORD' => 'stuff',
+            'EMAIL' => 'bruno@terraduo.com',
+            'RANDOM_FIELD_THAT_DOESNT_EXIST' => 'yay'
+        ));
+    }
 
 }
 
